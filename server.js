@@ -69,19 +69,4 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
-app.get('/api/channels', (req, res) => {
-  res.json(data.channels);
-});
 
-(async () => {
-  try {
-    data = await loadData();
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Loaded ${data.users.length} users and ${data.channels.length} channels`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-})();
