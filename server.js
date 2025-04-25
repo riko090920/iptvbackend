@@ -81,7 +81,19 @@ app.get('/api/channels', (req, res) => {
       console.log(`Loaded ${data.users.length} users and ${data.channels.length} channels`);
     });
   } catch (error) {
+    const path = require('path');
+const DATA_DIR = path.join(__dirname, 'data'); // Changed to relative path
+
+
+const users = await fs.readFile(path.join(DATA_DIR, 'users.json'));
     console.error('Failed to start server:', error);
     process.exit(1);
   }
-})();
+})();// Ensure data directory exists
+try {
+  await fs.access(DATA_DIR);
+} catch {
+  await fs.mkdir(DATA_DIR);
+  await fs.writeFile(path.join(DATA_DIR, 'users.json'), '[]');
+  await fs.writeFile(path.join(DATA_DIR, 'channels.json'), '[]');
+}
