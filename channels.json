@@ -1,0 +1,466 @@
+{
+  "countries": [
+    {
+      "name": "United Kingdom",
+      "code": "GB",
+      "channels": [
+        {
+          "id": "gb-1",
+          "name": "BBC One",
+          "url": "http://example.com/streams/bbc1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/bbc1.png",
+          "language": "English",
+          "isHD": true
+        },
+        {
+          "id": "gb-2",
+          "name": "ITV",
+          "url": "http://example.com/streams/itv.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/itv.png",
+          "language": "English",
+          "isHD": true
+        },
+        {
+          "id": "gb-3",
+          "name": "Sky News",
+          "url": "http://example.com/streams/skynews.m3u8",
+          "category": "News",
+          "logo": "https://i.imgur.com/skynews.png",
+          "language": "English",
+          "isHD": true
+        },
+        {
+          "id": "gb-4",
+          "name": "Sky Sports Premier League",
+          "url": "http://example.com/streams/skysportspl.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/skysports.png",
+          "language": "English",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "France",
+      "code": "FR",
+      "channels": [
+        {
+          "id": "fr-1",
+          "name": "TF1",
+          "url": "http://example.com/streams/tf1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/tf1.png",
+          "language": "French",
+          "isHD": true
+        },
+        {
+          "id": "fr-2",
+          "name": "France 2",
+          "url": "http://example.com/streams/france2.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/france2.png",
+          "language": "French",
+          "isHD": true
+        },
+        {
+          "id": "fr-3",
+          "name": "Canal+",
+          "url": "http://example.com/streams/canalplus.m3u8",
+          "category": "Entertainment",
+          "logo": "https://i.imgur.com/canalplus.png",
+          "language": "French",
+          "isHD": true
+        },
+        {
+          "id": "fr-4",
+          "name": "BFM TV",
+          "url": "http://example.com/streams/bfmtv.m3u8",
+          "category": "News",
+          "logo": "https://i.imgur.com/bfmtv.png",
+          "language": "French",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Germany",
+      "code": "DE",
+      "channels": [
+        {
+          "id": "de-1",
+          "name": "ARD Das Erste",
+          "url": "http://example.com/streams/ard.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/ard.png",
+          "language": "German",
+          "isHD": true
+        },
+        {
+          "id": "de-2",
+          "name": "ZDF",
+          "url": "http://example.com/streams/zdf.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/zdf.png",
+          "language": "German",
+          "isHD": true
+        },
+        {
+          "id": "de-3",
+          "name": "RTL",
+          "url": "http://example.com/streams/rtl.m3u8",
+          "category": "Entertainment",
+          "logo": "https://i.imgur.com/rtl.png",
+          "language": "German",
+          "isHD": true
+        },
+        {
+          "id": "de-4",
+          "name": "ProSieben",
+          "url": "http://example.com/streams/pro7.m3u8",
+          "category": "Entertainment",
+          "logo": "https://i.imgur.com/pro7.png",
+          "language": "German",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Italy",
+      "code": "IT",
+      "channels": [
+        {
+          "id": "it-1",
+          "name": "Rai 1",
+          "url": "http://example.com/streams/rai1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/rai1.png",
+          "language": "Italian",
+          "isHD": true
+        },
+        {
+          "id": "it-2",
+          "name": "Canale 5",
+          "url": "http://example.com/streams/canale5.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/canale5.png",
+          "language": "Italian",
+          "isHD": true
+        },
+        {
+          "id": "it-3",
+          "name": "Sky TG24",
+          "url": "http://example.com/streams/skytg24.m3u8",
+          "category": "News",
+          "logo": "https://i.imgur.com/skytg24.png",
+          "language": "Italian",
+          "isHD": true
+        },
+        {
+          "id": "it-4",
+          "name": "Rai Sport",
+          "url": "http://example.com/streams/raisport.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/raisport.png",
+          "language": "Italian",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Spain",
+      "code": "ES",
+      "channels": [
+        {
+          "id": "es-1",
+          "name": "La 1",
+          "url": "http://example.com/streams/la1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/la1.png",
+          "language": "Spanish",
+          "isHD": true
+        },
+        {
+          "id": "es-2",
+          "name": "Antena 3",
+          "url": "http://example.com/streams/antena3.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/antena3.png",
+          "language": "Spanish",
+          "isHD": true
+        },
+        {
+          "id": "es-3",
+          "name": "Movistar Fútbol",
+          "url": "http://example.com/streams/movistarfutbol.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/movistarfutbol.png",
+          "language": "Spanish",
+          "isHD": true
+        },
+        {
+          "id": "es-4",
+          "name": "Cuatro",
+          "url": "http://example.com/streams/cuatro.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/cuatro.png",
+          "language": "Spanish",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Portugal",
+      "code": "PT",
+      "channels": [
+        {
+          "id": "pt-1",
+          "name": "RTP 1",
+          "url": "http://example.com/streams/rtp1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/rtp1.png",
+          "language": "Portuguese",
+          "isHD": true
+        },
+        {
+          "id": "pt-2",
+          "name": "SIC",
+          "url": "http://example.com/streams/sic.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/sic.png",
+          "language": "Portuguese",
+          "isHD": true
+        },
+        {
+          "id": "pt-3",
+          "name": "TVI",
+          "url": "http://example.com/streams/tvi.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/tvi.png",
+          "language": "Portuguese",
+          "isHD": true
+        },
+        {
+          "id": "pt-4",
+          "name": "Sport TV",
+          "url": "http://example.com/streams/sporttv.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/sporttv.png",
+          "language": "Portuguese",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Netherlands",
+      "code": "NL",
+      "channels": [
+        {
+          "id": "nl-1",
+          "name": "NPO 1",
+          "url": "http://example.com/streams/npo1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/npo1.png",
+          "language": "Dutch",
+          "isHD": true
+        },
+        {
+          "id": "nl-2",
+          "name": "RTL 4",
+          "url": "http://example.com/streams/rtl4.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/rtl4.png",
+          "language": "Dutch",
+          "isHD": true
+        },
+        {
+          "id": "nl-3",
+          "name": "SBS 6",
+          "url": "http://example.com/streams/sbs6.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/sbs6.png",
+          "language": "Dutch",
+          "isHD": true
+        },
+        {
+          "id": "nl-4",
+          "name": "Ziggo Sport",
+          "url": "http://example.com/streams/ziggosport.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/ziggosport.png",
+          "language": "Dutch",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Belgium",
+      "code": "BE",
+      "channels": [
+        {
+          "id": "be-1",
+          "name": "VRT 1",
+          "url": "http://example.com/streams/vrt1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/vrt1.png",
+          "language": "Dutch",
+          "isHD": true
+        },
+        {
+          "id": "be-2",
+          "name": "La Une",
+          "url": "http://example.com/streams/laune.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/laune.png",
+          "language": "French",
+          "isHD": true
+        },
+        {
+          "id": "be-3",
+          "name": "RTL-TVI",
+          "url": "http://example.com/streams/rtltvi.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/rtltvi.png",
+          "language": "French",
+          "isHD": true
+        },
+        {
+          "id": "be-4",
+          "name": "Play Sports",
+          "url": "http://example.com/streams/playsports.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/playsports.png",
+          "language": "Dutch",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Sweden",
+      "code": "SE",
+      "channels": [
+        {
+          "id": "se-1",
+          "name": "SVT1",
+          "url": "http://example.com/streams/svt1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/svt1.png",
+          "language": "Swedish",
+          "isHD": true
+        },
+        {
+          "id": "se-2",
+          "name": "TV4",
+          "url": "http://example.com/streams/tv4.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/tv4.png",
+          "language": "Swedish",
+          "isHD": true
+        },
+        {
+          "id": "se-3",
+          "name": "TV6",
+          "url": "http://example.com/streams/tv6.m3u8",
+          "category": "Entertainment",
+          "logo": "https://i.imgur.com/tv6.png",
+          "language": "Swedish",
+          "isHD": true
+        },
+        {
+          "id": "se-4",
+          "name": "Viasat Sport",
+          "url": "http://example.com/streams/viasatsport.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/viasatsport.png",
+          "language": "Swedish",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Norway",
+      "code": "NO",
+      "channels": [
+        {
+          "id": "no-1",
+          "name": "NRK1",
+          "url": "http://example.com/streams/nrk1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/nrk1.png",
+          "language": "Norwegian",
+          "isHD": true
+        },
+        {
+          "id": "no-2",
+          "name": "TV2",
+          "url": "http://example.com/streams/tv2.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/tv2no.png",
+          "language": "Norwegian",
+          "isHD": true
+        },
+        {
+          "id": "no-3",
+          "name": "TV3 Norway",
+          "url": "http://example.com/streams/tv3no.m3u8",
+          "category": "Entertainment",
+          "logo": "https://i.imgur.com/tv3no.png",
+          "language": "Norwegian",
+          "isHD": true
+        },
+        {
+          "id": "no-4",
+          "name": "Eurosport Norway",
+          "url": "http://example.com/streams/eurosportno.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/eurosportno.png",
+          "language": "Norwegian",
+          "isHD": true
+        }
+      ]
+    },
+    {
+      "name": "Poland",
+      "code": "PL",
+      "channels": [
+        {
+          "id": "pl-1",
+          "name": "TVP1",
+          "url": "http://example.com/streams/tvp1.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/tvp1.png",
+          "language": "Polish",
+          "isHD": true
+        },
+        {
+          "id": "pl-2",
+          "name": "Polsat",
+          "url": "http://example.com/streams/polsat.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/polsat.png",
+          "language": "Polish",
+          "isHD": true
+        },
+        {
+          "id": "pl-3",
+          "name": "TVN",
+          "url": "http://example.com/streams/tvn.m3u8",
+          "category": "General",
+          "logo": "https://i.imgur.com/tvn.png",
+          "language": "Polish",
+          "isHD": true
+        },
+        {
+          "id": "pl-4",
+          "name": "Eleven Sports",
+          "url": "http://example.com/streams/elevensportspl.m3u8",
+          "category": "Sports",
+          "logo": "https://i.imgur.com/elevensports.png",
+          "language": "Polish",
+          "isHD": true
+        }
+      ]
+    }
+  ]
+}
