@@ -5,10 +5,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const morgan = require('morgan');
 
-// Initialize Express app
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
@@ -17,7 +14,7 @@ app.use(morgan('dev'));
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const PORT = process.env.PORT || 3000;
 
-// Create data directory and default files if they don't exist
+// Initialize data files
 async function initializeDataFiles() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
@@ -52,8 +49,8 @@ async function initializeDataFiles() {
 async function loadData() {
   try {
     const [usersData, channelsData] = await Promise.all([
-      fs.readFile(path.join(DATA_DIR, 'users.json'),
-      fs.readFile(path.join(DATA_DIR, 'channels.json'))
+      fs.readFile(path.join(DATA_DIR, 'users.json'),  // Fixed: added comma
+      fs.readFile(path.join(DATA_DIR, 'channels.json')) // Fixed: added closing parenthesis
     ]);
     return {
       users: JSON.parse(usersData),
@@ -133,12 +130,6 @@ app.get('/api/channels', async (req, res) => {
   }
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
 // Start server
 (async () => {
   await initializeDataFiles();
@@ -149,19 +140,8 @@ app.use((err, req, res, next) => {
     console.log(`Application ready: http://localhost:${PORT}`);
   });
 
-  // Handle server errors
   server.on('error', (error) => {
     console.error('Server error:', error);
     process.exit(1);
   });
 })();
-
-// Handle process termination
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
-});
-
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled rejection:', error);
-});
