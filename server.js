@@ -45,12 +45,12 @@ async function initializeDataFiles() {
   }
 }
 
-// Load data files
+// Load data files - CORRECTED VERSION
 async function loadData() {
   try {
     const [usersData, channelsData] = await Promise.all([
-      fs.readFile(path.join(DATA_DIR, 'users.json'),  // Fixed: added comma
-      fs.readFile(path.join(DATA_DIR, 'channels.json')) // Fixed: added closing parenthesis
+      fs.readFile(path.join(DATA_DIR, 'users.json'), 'utf8'),
+      fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8')
     ]);
     return {
       users: JSON.parse(usersData),
