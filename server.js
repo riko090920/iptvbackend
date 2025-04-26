@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
+const basicAuth = require('express-basic-auth');
+const helmet = require('helmet');
 
 // Initialize Express app
 const app = express();
@@ -11,11 +13,18 @@ const DATA_DIR = path.join(__dirname, 'data');
 const PORT = process.env.PORT || 10000;
 
 // Middleware
+app.use(helmet());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Import routes
-const adminRoutes = require('./routes/admin');
+// Admin Authentication
+const adminAuth = basicAuth({
+  users: { 
+    [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASSWORD || 'admin123' 
+  },
+  challenge: true,
+  realm: 'IPTV Admin Area'
+});
 
 // Initialize data directory
 async function initializeData() {
@@ -69,6 +78,33 @@ async function initializeData() {
   }
 }
 
+// Basic Admin Routes (replaces external admin routes file)
+const adminRouter = express.Router();
+adminRouter.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+adminRouter.get('/customers', async (req, res) => {
+  try {
+    const data = await fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8');
+    res.json(JSON.parse(data));
+  } catch (error) {
+    res.status(500).json({ error: "Failed to load customer data" });
+  }
+});
+
+adminRouter.get('/channels', async (req, res) => {
+  try {
+    const data = await fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8');
+    res.json(JSON.parse(data));
+  } catch (error) {
+    res.status(500).json({ error: "Failed to load channel data" });
+  }
+});
+
+// Mount admin routes with authentication
+app.use('/admin', adminAuth, adminRouter);
+
 // Authentication endpoint
 app.post('/api/auth', async (req, res) => {
   try {
@@ -118,14 +154,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Admin routes
-app.use('/api/admin', adminRoutes);
-
-// Serve admin panel
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -143,6 +171,12 @@ app.use((req, res) => {
   res.status(404).json({ error: "Endpoint not found" });
 });
 
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something broke!" });
+});
+
 // Start server
 (async () => {
   await initializeData();
@@ -153,11 +187,10 @@ app.use((req, res) => {
     console.log(`API Endpoints:`);
     console.log(`- POST /api/auth`);
     console.log(`- GET /health`);
-    console.log(`- GET /api/admin/customers`);
+    console.log(`- GET /admin/customers`);
   });
 })();
 
-// Error handling
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled rejection:', err);
 });
