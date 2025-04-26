@@ -70,7 +70,9 @@ async function initializeData() {
 app.post('/api/auth', async (req, res) => {
   try {
     const { mac } = req.body;
-    if (!mac) return res.status(400).json({ error: "MAC address required" });
+    if (!mac) {
+      return res.status(400).json({ error: "MAC address required" });
+    }
 
     const customersData = await fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8');
     const channelsData = await fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8');
@@ -79,13 +81,15 @@ app.post('/api/auth', async (req, res) => {
     const channels = JSON.parse(channelsData);
 
     const customer = customers.customers.find(c => c.macs.includes(mac));
-    if (!customer) return res.status(403).json({ authorized: false });
+    if (!customer) {
+      return res.status(403).json({ authorized: false });
+    }
 
-    const availableChannels = channels.countries.flatMap(country => 
-      country.channels.filter(ch => 
-        customer.channels.includes('*') || 
-        customer.channels.includes(ch.category)
-      );
+    const availableChannels = channels.countries.flatMap(country => {
+      return country.channels.filter(ch => {
+        return customer.channels.includes('*') || customer.channels.includes(ch.category);
+      });
+    });
 
     res.json({
       authorized: true,
