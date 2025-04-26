@@ -15,20 +15,14 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Session setup
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: true,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // only send cookie over HTTPS in production
-    httpOnly: true, // prevent client-side JS from accessing the cookie
-    sameSite: 'lax' // protect against CSRF
-  }
+  cookie: { secure: false } // Set to true if using HTTPS
 }));
 
-// Admin credentials (in production, store hashed passwords in database)
+// Admin credentials (in production, store hashed passwords in a database)
 const ADMIN_CREDENTIALS = {
   username: process.env.ADMIN_USER || 'admin',
   passwordHash: bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin123', 10)
@@ -40,7 +34,7 @@ app.post('/admin/login', async (req, res) => {
     const { username, password } = req.body;
     
     if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required.' });
+      return res.status(400).json({ error: 'Username and password required' });
     }
 
     const userValid = username === ADMIN_CREDENTIALS.username;
@@ -51,17 +45,16 @@ app.post('/admin/login', async (req, res) => {
       return res.json({ success: true, redirect: '/admin/' });
     }
 
-    // More secure error (don't reveal which field was wrong)
-    return res.status(401).json({ error: 'Invalid username or password.' });
+    return res.status(401).json({ error: 'Invalid credentials' });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Authentication middleware
 const authenticate = (req, res, next) => {
-  if (req.session.authenticated || req.path === '/login') {
+  if (req.session.authenticated || req.path === '/admin/login') {
     return next();
   }
   res.redirect('/admin/login');
@@ -80,7 +73,10 @@ app.get('/admin/login', (req, res) => {
 });
 
 app.get('/admin/logout', (req, res) => {
-  req.session.destroy(() => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to log out' });
+    }
     res.redirect('/admin/login');
   });
 });
@@ -92,11 +88,12 @@ app.get('/admin/api/customers', authenticate, async (req, res) => {
     res.json(JSON.parse(data));
   } catch (error) {
     console.error('Failed to load customers:', error);
-    res.status(500).json({ error: 'Failed to load customer data.' });
+    res.status(500).json({ error: "Failed to load customer data" });
   }
 });
 
-// Start server
+// Other existing routes (auth, health, etc.) remain the same...
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Admin panel: http://localhost:${PORT}/admin/login`);
