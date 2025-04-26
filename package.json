@@ -16,3 +16,7 @@
     "node": ">=18.0.0"
   }
 }
+"dependencies": {
+  "express-session": "^1.17.3",
+  "bcryptjs": "^2.4.3"
+}
