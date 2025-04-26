@@ -153,4 +153,32 @@ app.get('/api/channels', async (req, res) => {
     </html>
   `);
 });
-
+app.get('/testplayer', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>IPTV Test Player</title>
+      <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    </head>
+    <body>
+      <h1>Stream Test</h1>
+      <video id="video" controls width="640"></video>
+      <script>
+        const video = document.getElementById('video');
+        const streamUrl = '${process.env.TEST_STREAM_URL || "https://stream.tvklan.al/tvklan/stream/playlist.m3u8"}';
+        
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(streamUrl);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = streamUrl;
+          video.addEventListener('loadedmetadata', () => video.play());
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
