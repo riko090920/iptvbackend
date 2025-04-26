@@ -1,7 +1,17 @@
-"dependencies": {
-  "express": "^4.18.2",
-  "cors": "^2.8.5",
-  "dotenv": "^16.0.3",
-  "morgan": "^1.10.0",
-  "express-rate-limit": "^6.7.0"
+{
+  "name": "iptv-backend",
+  "version": "1.0.0",
+  "description": "IPTV Backend Service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "license": "MIT"
 }
