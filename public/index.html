@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPTV Admin Dashboard</title>
+  <link rel="stylesheet" href="/admin/css/style.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <header class="dashboard-header">
+      <div class="header-left">
+        <img src="https://4xiptv.com/images/logo.png" alt="IPTV Logo" class="logo">
+        <h1>IPTV Admin Dashboard</h1>
+      </div>
+      <div class="header-right">
+        <a href="/admin/logout" class="logout-btn">Logout</a>
+      </div>
+    </header>
+    
+    <nav class="sidebar">
+      <ul>
+        <li class="active"><a href="#dashboard">Dashboard</a></li>
+        <li><a href="#customers">Customers</a></li>
+        <li><a href="#channels">Channels</a></li>
+        <li><a href="#packages">Packages</a></li>
+        <li><a href="#settings">Settings</a></li>
+      </ul>
+    </nav>
+    
+    <main class="content">
+      <section id="dashboard" class="content-section">
+        <h2>Dashboard Overview</h2>
+        <div class="stats-container">
+          <div class="stat-card">
+            <h3>Total Customers</h3>
+            <p id="totalCustomers">Loading...</p>
+          </div>
+          <div class="stat-card">
+            <h3>Active Today</h3>
+            <p id="activeToday">Loading...</p>
+          </div>
+          <div class="stat-card">
+            <h3>Total Channels</h3>
+            <p id="totalChannels">Loading...</p>
+          </div>
+        </div>
+      </section>
+      
+      <section id="customers" class="content-section" style="display:none;">
+        <h2>Customer Management</h2>
+        <div class="table-container">
+          <table id="customersTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>MAC Address</th>
+                <th>Package</th>
+                <th>Expires</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin/js/main.js"></script>
+</body>
+</html>
