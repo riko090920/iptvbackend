@@ -66,18 +66,6 @@ async function initializeData() {
   }
 }
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: "IPTV Backend Service",
-    endpoints: {
-      auth: "POST /api/auth",
-      health: "GET /health",
-      docs: "GET /api-docs"
-    }
-  });
-});
-
 // Authentication endpoint
 app.post('/api/auth', async (req, res) => {
   try {
@@ -86,8 +74,10 @@ app.post('/api/auth', async (req, res) => {
       return res.status(400).json({ error: "MAC address required" });
     }
 
-    const customersData = await fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8');
-    const channelsData = await fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8');
+    const [customersData, channelsData] = await Promise.all([
+      fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8'),
+      fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8')
+    ]);
     
     const customers = JSON.parse(customersData);
     const channels = JSON.parse(channelsData);
@@ -97,11 +87,11 @@ app.post('/api/auth', async (req, res) => {
       return res.status(403).json({ authorized: false });
     }
 
-    const availableChannels = channels.countries.flatMap(country => 
-      country.channels.filter(ch => 
-        customer.channels.includes('*') || 
-        customer.channels.includes(ch.category)
-      );
+    const availableChannels = channels.countries.flatMap(country => {
+      return country.channels.filter(ch => {
+        return customer.channels.includes('*') || customer.channels.includes(ch.category);
+      });
+    });
 
     res.json({
       authorized: true,
@@ -119,42 +109,19 @@ app.post('/api/auth', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    timestamp: new Date().toISOString()
   });
 });
 
-// API documentation endpoint
-app.get('/api-docs', (req, res) => {
+// Root endpoint
+app.get('/', (req, res) => {
   res.json({
-    apiDocumentation: {
-      authentication: {
-        method: "POST",
-        endpoint: "/api/auth",
-        body: { mac: "string" },
-        response: {
-          authorized: "boolean",
-          customer: "string",
-          package: "string",
-          channels: "array"
-        }
-      },
-      healthCheck: {
-        method: "GET",
-        endpoint: "/health",
-        response: {
-          status: "string",
-          timestamp: "ISO8601",
-          version: "string"
-        }
-      }
+    message: "IPTV Backend Service",
+    endpoints: {
+      auth: "POST /api/auth",
+      health: "GET /health"
     }
   });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: "Endpoint not found" });
 });
 
 // Start server
@@ -167,6 +134,5 @@ app.use((req, res) => {
     console.log(`- GET / - Service information`);
     console.log(`- POST /api/auth - MAC authentication`);
     console.log(`- GET /health - Service health check`);
-    console.log(`- GET /api-docs - API documentation`);
   });
 })();
