@@ -1,205 +1,143 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
 
-// Initialize Express
+// Initialize Express app
 const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
-app.use(express.static(path.join(__dirname, 'frontend/build')));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
 
 // Configuration
 const DATA_DIR = path.join(__dirname, 'data');
 const PORT = process.env.PORT || 10000;
 
-// ======================
-// DATA INITIALIZATION
-// ======================
-async function initializeDataFiles() {
+// Middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Helper function to read JSON files
+async function readJsonFile(filename) {
+  try {
+    const data = await fs.readFile(path.join(DATA_DIR, filename), 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`Error reading ${filename}:`, error);
+    return null;
+  }
+}
+
+// Initialize data files
+async function initializeData() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     
-    const defaultFiles = {
-      'customers.json': JSON.stringify({
+    const defaultData = {
+      'customers.json': {
         customers: [
           {
             id: "cust_001",
-            name: "Premium Subscriber",
+            name: "Default Customer",
             macs: ["00:1A:2B:3C:4D:5E"],
-            package: "premium",
+            package: "basic",
             expires: "2025-12-31",
-            channels: ["*"] // All channels
+            channels: ["general"]
           }
         ]
-      }),
-      'channels.json': JSON.stringify({
+      },
+      'channels.json': {
         countries: [
           {
             name: "Albania",
             code: "AL",
             channels: [
               {
-                id: "al-tvklan",
+                id: "al-1",
                 name: "TV Klan",
                 url: "https://stream.tvklan.al/tvklan/stream/playlist.m3u8",
-                category: "General",
-                language: "Albanian",
-                logo: "https://i.imgur.com/tvklan.png"
+                category: "general",
+                language: "Albanian"
               }
             ]
           }
         ]
-      })
+      }
     };
 
-    for (const [filename, content] of Object.entries(defaultFiles)) {
+    for (const [filename, content] of Object.entries(defaultData)) {
       const filePath = path.join(DATA_DIR, filename);
       try {
         await fs.access(filePath);
       } catch {
-        await fs.writeFile(filePath, content);
+        await fs.writeFile(filePath, JSON.stringify(content, null, 2));
         console.log(`Created default ${filename}`);
       }
     }
   } catch (error) {
-    console.error("Data initialization error:", error);
+    console.error("Data initialization failed:", error);
     process.exit(1);
   }
 }
 
-// ======================
-// AUTHENTICATION LOGIC
-// ======================
-async function authenticateCustomer(mac) {
-  try {
-    const [customersData, channelsData] = await Promise.all([
-      fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8'),
-      fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8')
-    ]);
-
-    const { customers } = JSON.parse(customersData);
-    const { countries } = JSON.parse(channelsData);
-
-    const customer = customers.find(c => c.macs.includes(mac));
-    if (!customer) return null;
-
-    // Flatten all channels from all countries
-    const allChannels = countries.flatMap(country => country.channels);
-    
-    // Filter based on customer's package
-    const availableChannels = customer.channels[0] === '*' 
-      ? allChannels 
-      : allChannels.filter(c => customer.channels.includes(c.category));
-
-    return {
-      customerId: customer.id,
-      package: customer.package,
-      channels: availableChannels
-    };
-  } catch (error) {
-    console.error("Authentication error:", error);
-    return null;
-  }
-}
-
-// ======================
-// ADMIN MIDDLEWARE
-// ======================
-const adminAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader === `Bearer ${process.env.ADMIN_KEY}`) return next();
-  res.status(401).json({ error: "Unauthorized" });
-};
-
-// ======================
-// API ENDPOINTS
-// ======================
-
-// Customer Authentication
+// Authentication endpoint
 app.post('/api/auth', async (req, res) => {
   try {
     const { mac } = req.body;
     if (!mac) return res.status(400).json({ error: "MAC address required" });
 
-    const authResult = await authenticateCustomer(mac);
-    if (!authResult) return res.status(403).json({ authorized: false });
+    const [customers, channels] = await Promise.all([
+      readJsonFile('customers.json'),
+      readJsonFile('channels.json')
+    ]);
+
+    if (!customers || !channels) {
+      return res.status(500).json({ error: "Server configuration error" });
+    }
+
+    const customer = customers.customers.find(c => c.macs.includes(mac));
+    if (!customer) return res.status(403).json({ authorized: false });
+
+    const availableChannels = customer.channels[0] === '*' 
+      ? channels.countries.flatMap(c => c.channels)
+      : channels.countries.flatMap(c => 
+          c.channels.filter(ch => customer.channels.includes(ch.category))
+        );
 
     res.json({
       authorized: true,
-      customer: authResult.customerId,
-      package: authResult.package,
-      channels: authResult.channels
+      customer: customer.id,
+      package: customer.package,
+      channels: availableChannels
     });
   } catch (error) {
+    console.error("Auth error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Admin Customer Management
-app.get('/api/admin/customers', adminAuth, async (req, res) => {
-  try {
-    const data = await fs.readFile(path.join(DATA_DIR, 'customers.json'));
-    res.json(JSON.parse(data).customers);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to load customers" });
-  }
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
 });
 
-app.post('/api/admin/customers', adminAuth, async (req, res) => {
-  try {
-    const customersData = JSON.parse(await fs.readFile(path.join(DATA_DIR, 'customers.json')));
-    const newCustomer = {
-      id: `cust_${Date.now()}`,
-      ...req.body,
-      macs: Array.isArray(req.body.macs) ? req.body.macs : [req.body.macs]
-    };
-    
-    customersData.customers.push(newCustomer);
-    await fs.writeFile(path.join(DATA_DIR, 'customers.json'), JSON.stringify(customersData, null, 2));
-    
-    res.status(201).json(newCustomer);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create customer" });
-  }
-});
-
-// ======================
-// FRONTEND SERVING
-// ======================
+// Serve frontend
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend/build/index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ======================
-// SERVER STARTUP
-// ======================
+// Start server
 (async () => {
-  try {
-    await initializeDataFiles();
-    
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Admin API Key: ${process.env.ADMIN_KEY || 'Not set!'}`);
-      console.log(`Access the admin portal: http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
+  await initializeData();
+  
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Data directory: ${DATA_DIR}`);
+    console.log(`API endpoints:`);
+    console.log(`- POST /api/auth`);
+    console.log(`- GET /health`);
+  });
 })();
 
 // Error handling
