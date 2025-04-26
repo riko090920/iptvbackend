@@ -15,11 +15,17 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Session setup
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // Set to true if using HTTPS
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // only send cookie over HTTPS in production
+    httpOnly: true, // prevent client-side JS from accessing the cookie
+    sameSite: 'lax' // protect against CSRF
+  }
 }));
 
 // Admin credentials (in production, store hashed passwords in database)
@@ -34,7 +40,7 @@ app.post('/admin/login', async (req, res) => {
     const { username, password } = req.body;
     
     if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+      return res.status(400).json({ error: 'Username and password are required.' });
     }
 
     const userValid = username === ADMIN_CREDENTIALS.username;
@@ -45,10 +51,11 @@ app.post('/admin/login', async (req, res) => {
       return res.json({ success: true, redirect: '/admin/' });
     }
 
-    return res.status(401).json({ error: 'Invalid credentials' });
+    // More secure error (don't reveal which field was wrong)
+    return res.status(401).json({ error: 'Invalid username or password.' });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error.' });
   }
 });
 
@@ -73,8 +80,9 @@ app.get('/admin/login', (req, res) => {
 });
 
 app.get('/admin/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/admin/login');
+  req.session.destroy(() => {
+    res.redirect('/admin/login');
+  });
 });
 
 // Admin API endpoints
@@ -84,12 +92,11 @@ app.get('/admin/api/customers', authenticate, async (req, res) => {
     res.json(JSON.parse(data));
   } catch (error) {
     console.error('Failed to load customers:', error);
-    res.status(500).json({ error: "Failed to load customer data" });
+    res.status(500).json({ error: 'Failed to load customer data.' });
   }
 });
 
-// Other existing routes (auth, health, etc.) remain the same...
-
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Admin panel: http://localhost:${PORT}/admin/login`);
