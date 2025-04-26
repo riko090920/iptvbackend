@@ -14,24 +14,13 @@ const PORT = process.env.PORT || 10000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Helper function to read JSON files
-async function readJsonFile(filename) {
-  try {
-    const data = await fs.readFile(path.join(DATA_DIR, filename), 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error(`Error reading ${filename}:`, error);
-    return null;
-  }
-}
-
-// Initialize data files
+// Initialize data directory
 async function initializeData() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     
-    const defaultData = {
-      'customers.json': {
+    const defaultFiles = {
+      'customers.json': JSON.stringify({
         customers: [
           {
             id: "cust_001",
@@ -42,8 +31,8 @@ async function initializeData() {
             channels: ["general"]
           }
         ]
-      },
-      'channels.json': {
+      }, null, 2),
+      'channels.json': JSON.stringify({
         countries: [
           {
             name: "Albania",
@@ -59,15 +48,15 @@ async function initializeData() {
             ]
           }
         ]
-      }
+      }, null, 2)
     };
 
-    for (const [filename, content] of Object.entries(defaultData)) {
+    for (const [filename, content] of Object.entries(defaultFiles)) {
       const filePath = path.join(DATA_DIR, filename);
       try {
         await fs.access(filePath);
       } catch {
-        await fs.writeFile(filePath, JSON.stringify(content, null, 2));
+        await fs.writeFile(filePath, content);
         console.log(`Created default ${filename}`);
       }
     }
@@ -83,23 +72,20 @@ app.post('/api/auth', async (req, res) => {
     const { mac } = req.body;
     if (!mac) return res.status(400).json({ error: "MAC address required" });
 
-    const [customers, channels] = await Promise.all([
-      readJsonFile('customers.json'),
-      readJsonFile('channels.json')
-    ]);
-
-    if (!customers || !channels) {
-      return res.status(500).json({ error: "Server configuration error" });
-    }
+    const customersData = await fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8');
+    const channelsData = await fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8');
+    
+    const customers = JSON.parse(customersData);
+    const channels = JSON.parse(channelsData);
 
     const customer = customers.customers.find(c => c.macs.includes(mac));
     if (!customer) return res.status(403).json({ authorized: false });
 
-    const availableChannels = customer.channels[0] === '*' 
-      ? channels.countries.flatMap(c => c.channels)
-      : channels.countries.flatMap(c => 
-          c.channels.filter(ch => customer.channels.includes(ch.category))
-        );
+    const availableChannels = channels.countries.flatMap(country => 
+      country.channels.filter(ch => 
+        customer.channels.includes('*') || 
+        customer.channels.includes(ch.category)
+      );
 
     res.json({
       authorized: true,
@@ -117,14 +103,8 @@ app.post('/api/auth', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    timestamp: new Date().toISOString()
   });
-});
-
-// Serve frontend
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start server
@@ -133,18 +113,8 @@ app.get('*', (req, res) => {
   
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Data directory: ${DATA_DIR}`);
-    console.log(`API endpoints:`);
-    console.log(`- POST /api/auth`);
-    console.log(`- GET /health`);
+    console.log(`API Endpoints:`);
+    console.log(`- POST /api/auth - Authenticate with MAC address`);
+    console.log(`- GET /health - Service health check`);
   });
 })();
-
-// Error handling
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled rejection:', err);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
-});
