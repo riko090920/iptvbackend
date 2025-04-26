@@ -144,4 +144,13 @@ app.get('/api/channels', async (req, res) => {
     console.error('Server error:', error);
     process.exit(1);
   });
-})();
+})();app.get('/player', (req, res) => {
+  res.send(`
+    <html>
+      <video width="640" height="360" controls>
+        <source src="YOUR_CHANNEL_URL_HERE" type="application/x-mpegURL">
+      </video>
+    </html>
+  `);
+});
+
