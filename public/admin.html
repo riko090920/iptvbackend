@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPTV Admin Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .data-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>IPTV Admin Panel</h1>
+  
+  <div class="data-section">
+    <h2>Customers</h2>
+    <pre id="customers-data">Loading...</pre>
+  </div>
+  
+  <div class="data-section">
+    <h2>Channels</h2>
+    <pre id="channels-data">Loading...</pre>
+  </div>
+
+  <script>
+    async function loadData() {
+      try {
+        const [customersRes, channelsRes] = await Promise.all([
+          fetch('/admin/data/customers'),
+          fetch('/admin/data/channels')
+        ]);
+        
+        if (!customersRes.ok || !channelsRes.ok) throw new Error('Failed to load data');
+        
+        const customers = await customersRes.json();
+        const channels = await channelsRes.json();
+        
+        document.getElementById('customers-data').textContent = 
+          JSON.stringify(customers, null, 2);
+        document.getElementById('channels-data').textContent = 
+          JSON.stringify(channels, null, 2);
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to load data. Check console for details.');
+      }
+    }
+    
+    // Load data when page loads
+    loadData();
+  </script>
+</body>
+</html>
