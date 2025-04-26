@@ -14,6 +14,9 @@ const PORT = process.env.PORT || 10000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Import routes
+const adminRoutes = require('./routes/admin');
+
 // Initialize data directory
 async function initializeData() {
   try {
@@ -87,11 +90,12 @@ app.post('/api/auth', async (req, res) => {
       return res.status(403).json({ authorized: false });
     }
 
-    const availableChannels = channels.countries.flatMap(country => {
-      return country.channels.filter(ch => {
-        return customer.channels.includes('*') || customer.channels.includes(ch.category);
-      });
-    });
+    const availableChannels = channels.countries.flatMap(country => 
+      country.channels.filter(ch => 
+        customer.channels.includes('*') || 
+        customer.channels.includes(ch.category)
+      )
+    );
 
     res.json({
       authorized: true,
@@ -109,8 +113,17 @@ app.post('/api/auth', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
   });
+});
+
+// Admin routes
+app.use('/api/admin', adminRoutes);
+
+// Serve admin panel
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Root endpoint
@@ -119,9 +132,15 @@ app.get('/', (req, res) => {
     message: "IPTV Backend Service",
     endpoints: {
       auth: "POST /api/auth",
-      health: "GET /health"
+      health: "GET /health",
+      admin: "GET /admin"
     }
   });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: "Endpoint not found" });
 });
 
 // Start server
@@ -130,9 +149,19 @@ app.get('/', (req, res) => {
   
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Available Endpoints:`);
-    console.log(`- GET / - Service information`);
-    console.log(`- POST /api/auth - MAC authentication`);
-    console.log(`- GET /health - Service health check`);
+    console.log(`Admin panel: http://localhost:${PORT}/admin`);
+    console.log(`API Endpoints:`);
+    console.log(`- POST /api/auth`);
+    console.log(`- GET /health`);
+    console.log(`- GET /api/admin/customers`);
   });
 })();
+
+// Error handling
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
