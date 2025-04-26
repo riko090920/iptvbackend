@@ -4,31 +4,66 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 
+// Initialize Express
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(express.static(path.join(__dirname, 'frontend/build')));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 // Configuration
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const PORT = process.env.PORT || 3000;
+const DATA_DIR = path.join(__dirname, 'data');
+const PORT = process.env.PORT || 10000;
 
-// Initialize data files
+// ======================
+// DATA INITIALIZATION
+// ======================
 async function initializeDataFiles() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     
     const defaultFiles = {
-      'users.json': JSON.stringify(["00:1A:2B:3C:4D:5E", "11:22:33:44:55:66"]),
-      'channels.json': JSON.stringify([
-        {
-          id: "channel-1",
-          name: "Sample Channel",
-          url: "http://example.com/stream1.m3u8",
-          category: "General"
-        }
-      ])
+      'customers.json': JSON.stringify({
+        customers: [
+          {
+            id: "cust_001",
+            name: "Premium Subscriber",
+            macs: ["00:1A:2B:3C:4D:5E"],
+            package: "premium",
+            expires: "2025-12-31",
+            channels: ["*"] // All channels
+          }
+        ]
+      }),
+      'channels.json': JSON.stringify({
+        countries: [
+          {
+            name: "Albania",
+            code: "AL",
+            channels: [
+              {
+                id: "al-tvklan",
+                name: "TV Klan",
+                url: "https://stream.tvklan.al/tvklan/stream/playlist.m3u8",
+                category: "General",
+                language: "Albanian",
+                logo: "https://i.imgur.com/tvklan.png"
+              }
+            ]
+          }
+        ]
+      })
     };
 
     for (const [filename, content] of Object.entries(defaultFiles)) {
@@ -42,143 +77,136 @@ async function initializeDataFiles() {
     }
   } catch (error) {
     console.error("Data initialization error:", error);
+    process.exit(1);
   }
 }
 
-// Load data files - CORRECTED VERSION
-async function loadData() {
+// ======================
+// AUTHENTICATION LOGIC
+// ======================
+async function authenticateCustomer(mac) {
   try {
-    const [usersData, channelsData] = await Promise.all([
-      fs.readFile(path.join(DATA_DIR, 'users.json'), 'utf8'),
+    const [customersData, channelsData] = await Promise.all([
+      fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8'),
       fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8')
     ]);
+
+    const { customers } = JSON.parse(customersData);
+    const { countries } = JSON.parse(channelsData);
+
+    const customer = customers.find(c => c.macs.includes(mac));
+    if (!customer) return null;
+
+    // Flatten all channels from all countries
+    const allChannels = countries.flatMap(country => country.channels);
+    
+    // Filter based on customer's package
+    const availableChannels = customer.channels[0] === '*' 
+      ? allChannels 
+      : allChannels.filter(c => customer.channels.includes(c.category));
+
     return {
-      users: JSON.parse(usersData),
-      channels: JSON.parse(channelsData)
+      customerId: customer.id,
+      package: customer.package,
+      channels: availableChannels
     };
   } catch (error) {
-    console.error("Error loading data:", error);
-    return {
-      users: [],
-      channels: []
-    };
+    console.error("Authentication error:", error);
+    return null;
   }
 }
 
-// Routes
-app.get('/', (req, res) => {
-  res.json({
-    status: 'IPTV Backend Running',
-    endpoints: {
-      auth: 'POST /api/auth',
-      channels: 'GET /api/channels',
-      health: 'GET /health'
-    }
-  });
-});
+// ======================
+// ADMIN MIDDLEWARE
+// ======================
+const adminAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader === `Bearer ${process.env.ADMIN_KEY}`) return next();
+  res.status(401).json({ error: "Unauthorized" });
+};
 
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
-});
+// ======================
+// API ENDPOINTS
+// ======================
 
+// Customer Authentication
 app.post('/api/auth', async (req, res) => {
   try {
     const { mac } = req.body;
-    
-    if (!mac) {
-      return res.status(400).json({ 
-        authorized: false,
-        message: 'MAC address is required'
-      });
-    }
+    if (!mac) return res.status(400).json({ error: "MAC address required" });
 
-    const normalizedMac = mac.toUpperCase().trim();
-    const data = await loadData();
+    const authResult = await authenticateCustomer(mac);
+    if (!authResult) return res.status(403).json({ authorized: false });
 
-    if (data.users.includes(normalizedMac)) {
-      return res.json({
-        authorized: true,
-        channels: data.channels
-      });
-    } else {
-      return res.status(403).json({
-        authorized: false,
-        message: 'Unauthorized MAC address'
-      });
-    }
-  } catch (error) {
-    console.error("Auth error:", error);
-    res.status(500).json({
-      authorized: false,
-      message: 'Internal server error'
+    res.json({
+      authorized: true,
+      customer: authResult.customerId,
+      package: authResult.package,
+      channels: authResult.channels
     });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.get('/api/channels', async (req, res) => {
+// Admin Customer Management
+app.get('/api/admin/customers', adminAuth, async (req, res) => {
   try {
-    const data = await loadData();
-    res.json(data.channels);
+    const data = await fs.readFile(path.join(DATA_DIR, 'customers.json'));
+    res.json(JSON.parse(data).customers);
   } catch (error) {
-    console.error("Channels error:", error);
-    res.status(500).json({
-      error: 'Failed to load channels'
-    });
+    res.status(500).json({ error: "Failed to load customers" });
   }
 });
 
-// Start server
-(async () => {
-  await initializeDataFiles();
-  
-  const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Data directory: ${DATA_DIR}`);
-    console.log(`Application ready: http://localhost:${PORT}`);
-  });
-
-  server.on('error', (error) => {
-    console.error('Server error:', error);
-    process.exit(1);
-  });
-})();app.get('/player', (req, res) => {
-  res.send(`
-    <html>
-      <video width="640" height="360" controls>
-        <source src="YOUR_CHANNEL_URL_HERE" type="application/x-mpegURL">
-      </video>
-    </html>
-  `);
+app.post('/api/admin/customers', adminAuth, async (req, res) => {
+  try {
+    const customersData = JSON.parse(await fs.readFile(path.join(DATA_DIR, 'customers.json')));
+    const newCustomer = {
+      id: `cust_${Date.now()}`,
+      ...req.body,
+      macs: Array.isArray(req.body.macs) ? req.body.macs : [req.body.macs]
+    };
+    
+    customersData.customers.push(newCustomer);
+    await fs.writeFile(path.join(DATA_DIR, 'customers.json'), JSON.stringify(customersData, null, 2));
+    
+    res.status(201).json(newCustomer);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create customer" });
+  }
 });
-app.get('/testplayer', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>IPTV Test Player</title>
-      <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    </head>
-    <body>
-      <h1>Stream Test</h1>
-      <video id="video" controls width="640"></video>
-      <script>
-        const video = document.getElementById('video');
-        const streamUrl = '${process.env.TEST_STREAM_URL || "https://stream.tvklan.al/tvklan/stream/playlist.m3u8"}';
-        
-        if (Hls.isSupported()) {
-          const hls = new Hls();
-          hls.loadSource(streamUrl);
-          hls.attachMedia(video);
-          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = streamUrl;
-          video.addEventListener('loadedmetadata', () => video.play());
-        }
-      </script>
-    </body>
-    </html>
-  `);
+
+// ======================
+// FRONTEND SERVING
+// ======================
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/build/index.html'));
+});
+
+// ======================
+// SERVER STARTUP
+// ======================
+(async () => {
+  try {
+    await initializeDataFiles();
+    
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Admin API Key: ${process.env.ADMIN_KEY || 'Not set!'}`);
+      console.log(`Access the admin portal: http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+})();
+
+// Error handling
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
 });
