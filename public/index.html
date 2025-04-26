@@ -2,74 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPTV Admin Dashboard</title>
-  <link rel="stylesheet" href="/admin/css/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: #3b82f6;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    main {
+      flex: 1;
+      padding: 2rem;
+      text-align: center;
+    }
+    .btn {
+      margin-top: 2rem;
+      background: #ef4444;
+      color: white;
+      padding: 0.8rem 2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+    }
+    .btn:hover {
+      background: #dc2626;
+    }
+  </style>
 </head>
 <body>
-  <div class="dashboard-container">
-    <header class="dashboard-header">
-      <div class="header-left">
-        <img src="https://4xiptv.com/images/logo.png" alt="IPTV Logo" class="logo">
-        <h1>IPTV Admin Dashboard</h1>
-      </div>
-      <div class="header-right">
-        <a href="/admin/logout" class="logout-btn">Logout</a>
-      </div>
-    </header>
-    
-    <nav class="sidebar">
-      <ul>
-        <li class="active"><a href="#dashboard">Dashboard</a></li>
-        <li><a href="#customers">Customers</a></li>
-        <li><a href="#channels">Channels</a></li>
-        <li><a href="#packages">Packages</a></li>
-        <li><a href="#settings">Settings</a></li>
-      </ul>
-    </nav>
-    
-    <main class="content">
-      <section id="dashboard" class="content-section">
-        <h2>Dashboard Overview</h2>
-        <div class="stats-container">
-          <div class="stat-card">
-            <h3>Total Customers</h3>
-            <p id="totalCustomers">Loading...</p>
-          </div>
-          <div class="stat-card">
-            <h3>Active Today</h3>
-            <p id="activeToday">Loading...</p>
-          </div>
-          <div class="stat-card">
-            <h3>Total Channels</h3>
-            <p id="totalChannels">Loading...</p>
-          </div>
-        </div>
-      </section>
-      
-      <section id="customers" class="content-section" style="display:none;">
-        <h2>Customer Management</h2>
-        <div class="table-container">
-          <table id="customersTable">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>MAC Address</th>
-                <th>Package</th>
-                <th>Expires</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Will be populated by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
 
-  <script src="/admin/js/main.js"></script>
+<header>
+  Welcome, Admin
+</header>
+
+<main>
+  <h1>Dashboard</h1>
+  <p>Manage customers, settings, and more!</p>
+  <a href="/admin/logout"><button class="btn">Logout</button></a>
+</main>
+
 </body>
 </html>
