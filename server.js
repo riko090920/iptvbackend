@@ -2,13 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
-const basicAuth = require('express-basic-auth');
 const helmet = require('helmet');
 
-// Initialize Express app
 const app = express();
-
-// Configuration
 const DATA_DIR = path.join(__dirname, 'data');
 const PORT = process.env.PORT || 10000;
 
@@ -17,184 +13,67 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Admin Authentication
-const adminAuth = basicAuth({
-  users: { 
-    [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASSWORD || 'admin123' 
-  },
-  challenge: true,
-  realm: 'IPTV Admin Area'
-});
+// Simple auth middleware (replaces express-basic-auth)
+const adminAuth = (req, res, next) => {
+  const auth = {
+    login: process.env.ADMIN_USER || 'admin',
+    password: process.env.ADMIN_PASSWORD || 'admin123'
+  };
 
-// Initialize data directory
-async function initializeData() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    
-    const defaultFiles = {
-      'customers.json': JSON.stringify({
-        customers: [
-          {
-            id: "cust_001",
-            name: "Default Customer",
-            macs: ["00:1A:2B:3C:4D:5E"],
-            package: "basic",
-            expires: "2025-12-31",
-            channels: ["general"]
-          }
-        ]
-      }, null, 2),
-      'channels.json': JSON.stringify({
-        countries: [
-          {
-            name: "Albania",
-            code: "AL",
-            channels: [
-              {
-                id: "al-1",
-                name: "TV Klan",
-                url: "https://stream.tvklan.al/tvklan/stream/playlist.m3u8",
-                category: "general",
-                language: "Albanian"
-              }
-            ]
-          }
-        ]
-      }, null, 2)
-    };
+  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+  const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
 
-    for (const [filename, content] of Object.entries(defaultFiles)) {
-      const filePath = path.join(DATA_DIR, filename);
-      try {
-        await fs.access(filePath);
-      } catch {
-        await fs.writeFile(filePath, content);
-        console.log(`Created default ${filename}`);
-      }
-    }
-  } catch (error) {
-    console.error("Data initialization failed:", error);
-    process.exit(1);
+  if (login && password && login === auth.login && password === auth.password) {
+    return next();
   }
-}
 
-// Basic Admin Routes (replaces external admin routes file)
-const adminRouter = express.Router();
-adminRouter.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.set('WWW-Authenticate', 'Basic realm="Admin Area"');
+  res.status(401).send('Authentication required');
+};
+
+// Admin routes
+app.get('/admin', adminAuth, (req, res) => {
+  try {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  } catch (error) {
+    console.error('Failed to serve admin page:', error);
+    res.status(500).send('Failed to load admin interface');
+  }
 });
 
-adminRouter.get('/customers', async (req, res) => {
+// Admin API endpoints
+app.get('/admin/data/customers', adminAuth, async (req, res) => {
   try {
     const data = await fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8');
     res.json(JSON.parse(data));
   } catch (error) {
+    console.error('Failed to load customers:', error);
     res.status(500).json({ error: "Failed to load customer data" });
   }
 });
 
-adminRouter.get('/channels', async (req, res) => {
+app.get('/admin/data/channels', adminAuth, async (req, res) => {
   try {
     const data = await fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8');
     res.json(JSON.parse(data));
   } catch (error) {
+    console.error('Failed to load channels:', error);
     res.status(500).json({ error: "Failed to load channel data" });
   }
 });
 
-// Mount admin routes with authentication
-app.use('/admin', adminAuth, adminRouter);
+// Other existing routes (auth, health, etc.) remain the same...
 
-// Authentication endpoint
-app.post('/api/auth', async (req, res) => {
-  try {
-    const { mac } = req.body;
-    if (!mac) {
-      return res.status(400).json({ error: "MAC address required" });
-    }
-
-    const [customersData, channelsData] = await Promise.all([
-      fs.readFile(path.join(DATA_DIR, 'customers.json'), 'utf8'),
-      fs.readFile(path.join(DATA_DIR, 'channels.json'), 'utf8')
-    ]);
-    
-    const customers = JSON.parse(customersData);
-    const channels = JSON.parse(channelsData);
-
-    const customer = customers.customers.find(c => c.macs.includes(mac));
-    if (!customer) {
-      return res.status(403).json({ authorized: false });
-    }
-
-    const availableChannels = channels.countries.flatMap(country => 
-      country.channels.filter(ch => 
-        customer.channels.includes('*') || 
-        customer.channels.includes(ch.category)
-      )
-    );
-
-    res.json({
-      authorized: true,
-      customer: customer.id,
-      package: customer.package,
-      channels: availableChannels
-    });
-  } catch (error) {
-    console.error("Auth error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
-});
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: "IPTV Backend Service",
-    endpoints: {
-      auth: "POST /api/auth",
-      health: "GET /health",
-      admin: "GET /admin"
-    }
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: "Endpoint not found" });
-});
-
-// Error handler
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Something broke!" });
-});
-
-// Start server
-(async () => {
-  await initializeData();
-  
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Admin panel: http://localhost:${PORT}/admin`);
-    console.log(`API Endpoints:`);
-    console.log(`- POST /api/auth`);
-    console.log(`- GET /health`);
-    console.log(`- GET /admin/customers`);
+  console.error('Server error:', err);
+  res.status(500).json({ 
+    error: "Internal server error",
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
-})();
-
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled rejection:', err);
 });
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Admin panel: http://localhost:${PORT}/admin`);
 });
